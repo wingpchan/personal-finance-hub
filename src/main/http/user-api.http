@@ -1,0 +1,184 @@
+### Register a new user
+POST http://localhost:8081/api/users/register
+Content-Type: application/json
+X-Created-By: testuser
+
+{
+  "title": "MR",
+  "firstName": "Johnny",
+  "middleName": "William",
+  "lastName": "Smith SNR",
+  "dateOfBirth": "2005-09-25",
+  "email": "john.smith.snr@example.com",
+  "phoneNumber": "+441234567891",
+  "password": "Password1!",
+  "emailVerified": false,
+  "status": "PENDING_VERIFICATION"
+}
+
+### Register a second user
+POST http://localhost:8081/api/users/register
+Content-Type: application/json
+X-Created-By: testuser
+
+{
+  "title": "MRS",
+  "firstName": "Jane",
+  "middleName": "",
+  "lastName": "Jones",
+  "dateOfBirth": "1990-03-22",
+  "email": "jane.jones@example.com",
+  "phoneNumber": "+441234567891",
+  "password": "Password1!",
+  "emailVerified": false,
+  "status": "PENDING_VERIFICATION"
+}
+
+### Register a sixth user
+POST http://localhost:8081/api/users/register
+Content-Type: application/json
+X-Created-By: testuser
+
+{
+  "title": "MR",
+  "firstName": "Tummy",
+  "middleName": "",
+  "lastName": "TumTum",
+  "dateOfBirth": "1990-03-22",
+  "email": "Tummy.TumTum@example.com",
+  "phoneNumber": "+441234567891",
+  "password": "Password1!"
+}
+
+### Update the sixth user
+PUT http://localhost:8081/api/users/14
+Content-Type: application/json
+X-Created-By: testuser
+
+{
+  "title": "DR",
+  "firstName": "Tummy",
+  "middleName": "",
+  "lastName": "TumTum",
+  "dateOfBirth": "1990-03-22",
+  "email": "Tummy.TumTum@example.com",
+  "phoneNumber": "+441234567891",
+  "password": "Password1!"
+}
+
+### Get all current users
+GET http://localhost:8081/api/users
+Content-Type: application/json
+#
+### Get all users including historical
+GET http://localhost:8081/api/users?activeOnly=false
+Content-Type: application/json
+
+### Search including historical
+GET http://localhost:8081/api/users/search?name=smith&activeOnly=false
+Content-Type: application/json
+
+### Get user by ID (replace 1 with actual ID from register response)
+GET http://localhost:8081/api/users/7
+Content-Type: application/json
+
+### Get user by email
+GET http://localhost:8081/api/users/email/john.smith@example.com
+Content-Type: application/json
+
+### Search by name wildcard
+GET http://localhost:8081/api/users/search?name=smi
+Content-Type: application/json
+
+### Search by first name
+GET http://localhost:8081/api/users/search?firstName=jane
+Content-Type: application/json
+
+### Search by first name
+GET http://localhost:8081/api/users/search?firstName=Tim
+Content-Type: application/json
+
+### Search by first name
+GET http://localhost:8081/api/users/search?firstName=Tim&activeOnly=false
+Content-Type: application/json
+
+### Search by first name - include historic
+GET http://localhost:8081/api/users/search?firstName=jane&activeOnly=false
+
+### Search by first and last name
+GET http://localhost:8081/api/users/search?firstName=john&lastName=smith
+Content-Type: application/json
+
+### Update user (replace 1 with actual ID - don't exists)
+PUT http://localhost:8081/api/users/1
+Content-Type: application/json
+X-Updated-By: testuser
+
+{
+  "title": "DR",
+  "firstName": "John",
+  "middleName": "William",
+  "lastName": "Smith",
+  "dateOfBirth": "1985-06-15",
+  "email": "john.smith@example.com",
+  "phoneNumber": "+441234567890",
+  "password": "Password1!",
+  "emailVerified": true,
+  "status": "ACTIVE"
+}
+
+### Update user (6 ctual ID)
+PUT http://localhost:8081/api/users/6
+Content-Type: application/json
+X-Updated-By: testuser
+
+{
+  "title": "DR",
+  "firstName": "Bob",
+  "middleName": "William",
+  "lastName": "Hope",
+  "dateOfBirth": "1985-06-15",
+  "email": "bob.hope@test.com",
+  "phoneNumber": "+441234567894",
+  "password": "Password1!",
+  "emailVerified": true,
+  "status": "ACTIVE"
+}
+
+### Get version history for user (replace 1 with actual ID)
+GET http://localhost:8081/api/users/14/history
+Content-Type: application/json
+
+### Verify email (replace 6 with actual ID)
+PATCH http://localhost:8081/api/users/6/verify-email
+Content-Type: application/json
+X-Updated-By: testuser
+
+### Update status (replace 1 with actual ID)
+PATCH http://localhost:8081/api/users/14/status?status=ACTIVE
+Content-Type: application/json
+X-Updated-By: testuser
+
+### Delete user (replace 1 with actual ID)
+DELETE http://localhost:8081/api/users/14
+Content-Type: application/json
+X-Deleted-By: testuser
+
+### Get history after delete (replace 1 with actual ID)
+GET http://localhost:8081/api/users/1/history
+Content-Type: application/json
+
+### Test validation error
+POST http://localhost:8081/api/users/register
+Content-Type: application/json
+X-Created-By: testuser
+
+{
+  "title": "MR",
+  "firstName": "Test",
+  "lastName": "User",
+  "dateOfBirth": "1990-01-01",
+  "email": "notanemail",
+  "phoneNumber": "+441234567890",
+  "password": "Password1!"
+}
