@@ -1,4 +1,4 @@
-package com.financehub.user_service;
+package com.financehub.user_service.entity;
 
 import jakarta.persistence.Embeddable;
 import lombok.Data;

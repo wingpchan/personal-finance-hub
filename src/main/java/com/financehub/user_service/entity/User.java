@@ -1,5 +1,7 @@
-package com.financehub.user_service;
+package com.financehub.user_service.entity;
 
+import com.financehub.user_service.enums.Title;
+import com.financehub.user_service.enums.UserStatus;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.Data;

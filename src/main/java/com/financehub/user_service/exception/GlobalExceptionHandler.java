@@ -1,4 +1,4 @@
-package com.financehub.user_service;
+package com.financehub.user_service.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

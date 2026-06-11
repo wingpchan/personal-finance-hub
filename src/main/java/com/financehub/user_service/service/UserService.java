@@ -1,5 +1,9 @@
-package com.financehub.user_service;
+package com.financehub.user_service.service;
 
+import com.financehub.user_service.enums.UserStatus;
+import com.financehub.user_service.entity.User;
+import com.financehub.user_service.entity.UserId;
+import com.financehub.user_service.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import java.time.LocalDateTime;

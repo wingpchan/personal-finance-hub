@@ -1,5 +1,7 @@
-package com.financehub.user_service;
+package com.financehub.user_service.repository;
 
+import com.financehub.user_service.entity.User;
+import com.financehub.user_service.entity.UserId;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

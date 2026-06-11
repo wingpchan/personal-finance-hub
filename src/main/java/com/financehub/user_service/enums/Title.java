@@ -1,4 +1,4 @@
-package com.financehub.user_service;
+package com.financehub.user_service.enums;
 
 public enum Title {
     MR,

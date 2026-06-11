@@ -5,6 +5,10 @@ spring:
     password: Passw0rd
     driver-class-name: org.postgresql.Driver
 
+  jwt:
+    secret: "ThisIsAVeryLongSecretKeyForJWTTokenGenerationThatIsAtLeast256BitsLong"
+    expiration: 86400000
+
   jpa:
     hibernate:
       ddl-auto: update

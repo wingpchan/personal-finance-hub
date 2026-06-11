@@ -1,5 +1,8 @@
-package com.financehub.user_service;
+package com.financehub.user_service.controller;
 
+import com.financehub.user_service.service.UserService;
+import com.financehub.user_service.enums.UserStatus;
+import com.financehub.user_service.entity.User;
 import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
