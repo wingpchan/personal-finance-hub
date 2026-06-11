@@ -36,6 +36,9 @@ public interface UserRepository extends JpaRepository<User, UserId> {
             "AND u.endDate IS NULL")
     boolean existsByEmail(@Param("email") String email);
 
+    @Query("SELECT COUNT(u) > 0 FROM User u WHERE u.email = :email")
+    boolean existsByEmailAny(@Param("email") String email);
+
     // Get all current active users
     @Query("SELECT u FROM User u WHERE u.endDate IS NULL")
     List<User> findAllCurrentUsers();

@@ -1,5 +1,7 @@
 package com.financehub.user_service.controller;
 
+import com.financehub.user_service.dto.LoginRequest;
+import com.financehub.user_service.dto.LoginResponse;
 import com.financehub.user_service.service.UserService;
 import com.financehub.user_service.enums.UserStatus;
 import com.financehub.user_service.entity.User;
@@ -19,6 +21,22 @@ public class UserController {
 
     public UserController(UserService userService) {
         this.userService = userService;
+    }
+
+    // Login
+    @PostMapping("/login")
+    public ResponseEntity<LoginResponse> login(
+            @Valid @RequestBody LoginRequest loginRequest) {
+        return ResponseEntity.ok(userService.login(loginRequest));
+    }
+
+    // Admin only - register an admin user
+    @PostMapping("/register/admin")
+    public ResponseEntity<User> registerAdmin(
+            @Valid @RequestBody User user,
+            @RequestHeader(value = "X-Created-By", defaultValue = "system") String createdBy) {
+        User savedUser = userService.registerAdmin(user, createdBy);
+        return ResponseEntity.status(HttpStatus.CREATED).body(savedUser);
     }
 
     // Register new user
@@ -114,6 +132,14 @@ public class UserController {
             @RequestHeader(value = "X-Deleted-By", defaultValue = "system") String deletedBy) {
         userService.deleteUser(id, deletedBy);
         return ResponseEntity.noContent().build();
+    }
+
+    // Admin only - reinstate a deleted user
+    @PatchMapping("/{id}/reinstate")
+    public ResponseEntity<User> reinstateUser(
+            @PathVariable Long id,
+            @RequestHeader(value = "X-Updated-By", defaultValue = "system") String updatedBy) {
+        return ResponseEntity.ok(userService.reinstateUser(id, updatedBy));
     }
 
     // Verify email

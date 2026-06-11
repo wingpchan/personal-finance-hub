@@ -1,9 +1,14 @@
 package com.financehub.user_service.service;
 
+import com.financehub.user_service.dto.LoginRequest;
+import com.financehub.user_service.dto.LoginResponse;
+import com.financehub.user_service.enums.Title;
 import com.financehub.user_service.enums.UserStatus;
+import com.financehub.user_service.enums.Role;
 import com.financehub.user_service.entity.User;
 import com.financehub.user_service.entity.UserId;
 import com.financehub.user_service.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import java.time.LocalDateTime;
@@ -15,10 +20,90 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
 
-    public UserService(UserRepository userRepository) {
+    @Value("${admin.email}")
+    private String adminEmail;
+
+    @Value("${admin.password}")
+    private String adminPassword;
+
+    @Value("${admin.firstName}")
+    private String adminFirstName;
+
+    @Value("${admin.lastName}")
+    private String adminLastName;
+
+    public UserService(UserRepository userRepository, JwtService jwtService) {
         this.userRepository = userRepository;
+        this.jwtService = jwtService;
         this.passwordEncoder = new BCryptPasswordEncoder();
+    }
+
+    public LoginResponse login(LoginRequest loginRequest) {
+        // Find current active user by email
+        User user = userRepository.findCurrentByEmail(loginRequest.getEmail())
+                .orElseThrow(() -> new RuntimeException("Invalid email or password"));
+
+        // Check account status
+        if (user.getStatus() == UserStatus.SUSPENDED) {
+            throw new RuntimeException("Account is suspended");
+        }
+        if (user.getStatus() == UserStatus.INACTIVE) {
+            throw new RuntimeException("Account is inactive");
+        }
+        if (user.getStatus() == UserStatus.CLOSED) {
+            throw new RuntimeException("Account is closed");
+        }
+        if (user.getStatus() == UserStatus.PENDING_VERIFICATION) {
+            throw new RuntimeException("Email not yet verified");
+        }
+
+        // Validate password
+        if (!passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
+            throw new RuntimeException("Invalid email or password");
+        }
+
+        // Generate JWT token
+        String token = jwtService.generateToken(
+                user.getUserId().getId(),
+                user.getEmail(),
+                user.getRole()
+        );
+
+        // Build and return response
+        return new LoginResponse(
+                token,
+                "Bearer",
+                jwtService.extractExpiration(token),
+                user.getUserId().getId(),
+                user.getEmail(),
+                user.getFirstName(),
+                user.getLastName(),
+                user.getStatus()
+        );
+    }
+
+    // Admin only - create an admin user
+    public User registerAdmin(User user, String createdBy) {
+        if (userRepository.existsByEmail(user.getEmail())) {
+            throw new RuntimeException("Email already registered: " + user.getEmail());
+        }
+
+        Long nextId = userRepository.getNextUserId();
+        UserId userId = new UserId();
+        userId.setId(nextId);
+        userId.setEffectiveDate(LocalDateTime.now());
+        user.setUserId(userId);
+
+        user.setCreatedBy(createdBy);
+        user.setUpdatedBy(createdBy);
+        user.setStatus(UserStatus.ACTIVE);
+        user.setRole(Role.ROLE_ADMIN);
+        user.setEmailVerified(true);
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+
+        return userRepository.save(user);
     }
 
     // Register a new user
@@ -40,6 +125,8 @@ public class UserService {
         user.setCreatedBy(createdBy);
         user.setUpdatedBy(createdBy);
 
+        // Default role
+        user.setRole(Role.ROLE_USER);
         // Default status
         user.setStatus(UserStatus.PENDING_VERIFICATION);
 
@@ -145,6 +232,45 @@ public class UserService {
         userRepository.save(currentUser);
     }
 
+    // Admin only - reinstate a deleted user
+    public User reinstateUser(Long id, String reinstatedBy) {
+        // Get the latest version regardless of active status
+        List<User> versions = userRepository.findAllVersionsById(id);
+        if (versions.isEmpty()) {
+            throw new RuntimeException("User not found with ID: " + id);
+        }
+
+        // Check it's actually deleted
+        User latestVersion = versions.get(0);
+        if (latestVersion.getEndDate() == null) {
+            throw new RuntimeException("User is already active, no reinstatement needed");
+        }
+
+        // Create new active version based on latest
+        LocalDateTime now = LocalDateTime.now();
+        UserId newUserId = new UserId();
+        newUserId.setId(id);
+        newUserId.setEffectiveDate(now);
+
+        User reinstatedUser = new User();
+        reinstatedUser.setUserId(newUserId);
+        reinstatedUser.setTitle(latestVersion.getTitle());
+        reinstatedUser.setFirstName(latestVersion.getFirstName());
+        reinstatedUser.setMiddleName(latestVersion.getMiddleName());
+        reinstatedUser.setLastName(latestVersion.getLastName());
+        reinstatedUser.setDateOfBirth(latestVersion.getDateOfBirth());
+        reinstatedUser.setEmail(latestVersion.getEmail());
+        reinstatedUser.setPhoneNumber(latestVersion.getPhoneNumber());
+        reinstatedUser.setPassword(latestVersion.getPassword());
+        reinstatedUser.setEmailVerified(latestVersion.isEmailVerified());
+        reinstatedUser.setStatus(UserStatus.ACTIVE);
+        reinstatedUser.setRole(latestVersion.getRole());
+        reinstatedUser.setCreatedBy(latestVersion.getCreatedBy());
+        reinstatedUser.setUpdatedBy(reinstatedBy);
+
+        return userRepository.save(reinstatedUser);
+    }
+
     // Verify email
     public User verifyEmail(Long id, String updatedBy) {
         User currentUser = userRepository.findCurrentById(id)
@@ -162,5 +288,20 @@ public class UserService {
         currentUser.setStatus(status);
         currentUser.setUpdatedBy(updatedBy);
         return userRepository.save(currentUser);
+    }
+
+    public void seedAdminUser() {
+        if (!userRepository.existsByEmailAny(adminEmail)) {
+            User admin = new User();
+            admin.setTitle(Title.MR);
+            admin.setFirstName(adminFirstName);
+            admin.setLastName(adminLastName);
+            admin.setDateOfBirth(java.time.LocalDate.of(1980, 1, 1));
+            admin.setEmail(adminEmail);
+            admin.setPhoneNumber("+441234567890");
+            admin.setPassword(adminPassword);
+            admin.setRole(Role.ROLE_ADMIN);
+            registerAdmin(admin, "system");
+        }
     }
 }

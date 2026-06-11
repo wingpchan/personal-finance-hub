@@ -1,3 +1,41 @@
+### Login as admin
+POST http://localhost:8081/api/users/login
+Content-Type: application/json
+
+{
+  "email": "admin@financehub.com",
+  "password": "Admin1!"
+}
+
+eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJhZG1pbkBmaW5hbmNlaHViLmNvbSIsInVzZXJJZCI6MTUsInJvbGUiOiJST0xFX0FETUlOIiwiaWF0IjoxNzgxMTk1NjQwLCJleHAiOjE3ODEyODIwNDB9.lVUO6X7TyagcTo4WwNavScFufVLxqVyCA4woE-4MnEZp6PTaSzy0fnz3VvzSUhrEX1JT8G8rUHORcwMVbDWpYg
+
+### Get all users - admin only
+GET http://localhost:8081/api/users
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJib2IuaG9wZUB0ZXN0LmNvbSIsInVzZXJJZCI6Niwicm9sZSI6IlJPTEVfVVNFUiIsImlhdCI6MTc4MTE5NTkzNCwiZXhwIjoxNzgxMjgyMzM0fQ.tOXiR-5hMOv37dUBNGWEkonbdujRLXd62W0lVesMj9ow8NgnORKHnolgC9SPjQC3gSq-zENcRjx7XNjEBivs3A
+#Authorization: Bearer <paste_token_here>
+
+### Get all users - no token
+GET http://localhost:8081/api/users
+Content-Type: application/json
+
+### Login as regular user - email not varified
+POST http://localhost:8081/api/users/login
+Content-Type: application/json
+
+{
+  "email": "john.smith@example.com",
+  "password": "Password1!"
+}
+
+### Login as regular user - active
+POST http://localhost:8081/api/users/login
+Content-Type: application/json
+
+{
+  "email": "bob.hope@test.com",
+  "password": "Password1!"
+}
 ### Register a new user
 POST http://localhost:8081/api/users/register
 Content-Type: application/json
@@ -32,6 +70,24 @@ X-Created-By: testuser
   "password": "Password1!",
   "emailVerified": false,
   "status": "PENDING_VERIFICATION"
+}
+
+### Login
+POST http://localhost:8081/api/users/login
+Content-Type: application/json
+
+{
+  "email": "bob.hope@test.com",
+  "password": "Password1!"
+}
+
+### Login - wrong password test
+POST http://localhost:8081/api/users/login
+Content-Type: application/json
+
+{
+  "email": "john.smith@example.com",
+  "password": "wrongpassword"
 }
 
 ### Register a sixth user
@@ -79,7 +135,7 @@ GET http://localhost:8081/api/users/search?name=smith&activeOnly=false
 Content-Type: application/json
 
 ### Get user by ID (replace 1 with actual ID from register response)
-GET http://localhost:8081/api/users/7
+GET http://localhost:8081/api/users/6
 Content-Type: application/json
 
 ### Get user by email
@@ -155,7 +211,7 @@ Content-Type: application/json
 X-Updated-By: testuser
 
 ### Update status (replace 1 with actual ID)
-PATCH http://localhost:8081/api/users/14/status?status=ACTIVE
+PATCH http://localhost:8081/api/users/4/status?status=ACTIVE
 Content-Type: application/json
 X-Updated-By: testuser
 

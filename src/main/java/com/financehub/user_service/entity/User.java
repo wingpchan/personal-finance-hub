@@ -1,7 +1,6 @@
 package com.financehub.user_service.entity;
 
-import com.financehub.user_service.enums.Title;
-import com.financehub.user_service.enums.UserStatus;
+import com.financehub.user_service.enums.*;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.Data;
@@ -20,6 +19,10 @@ public class User {
     )
     @EmbeddedId
     private UserId userId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private Role role;
 
     // Personal details
     @Enumerated(EnumType.STRING)
@@ -102,6 +105,10 @@ public class User {
         }
         if (status == null) {
             status = UserStatus.PENDING_VERIFICATION;
+        }
+
+        if (role == null) {
+            role = Role.ROLE_USER;
         }
     }
 

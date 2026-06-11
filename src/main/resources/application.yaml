@@ -2,12 +2,8 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/userService
     username: postgres
-    password: Passw0rd
+    password: ${DB_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
-
-  jwt:
-    secret: "ThisIsAVeryLongSecretKeyForJWTTokenGenerationThatIsAtLeast256BitsLong"
-    expiration: 86400000
 
   jpa:
     hibernate:
@@ -22,3 +18,13 @@ spring:
 
 server:
   port: 8081
+
+jwt:
+  secret: ${JWT_SECRET:defaultsecretfordevonly}
+  expiration: ${JWT_EXPIRATION:86400000}
+
+admin:
+  email: ${ADMIN_EMAIL:admin@financehub.com}
+  password: ${ADMIN_PASSWORD:Admin1!}
+  firstName: ${ADMIN_FIRSTNAME:System}
+  lastName: ${ADMIN_LASTNAME:Admin}
