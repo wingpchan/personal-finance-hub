@@ -53,14 +53,60 @@ This reflects the modern reality of software development where experienced devel
 leverage AI tools to accelerate delivery while applying their domain knowledge,
 architectural thinking and quality standards to validate and improve the output.
 
-Notable examples of developer input during this project:
-- Challenged the effective dating boundary timestamp approach
-- Identified the need for full password history validation
-- Proposed CQRS pattern for audit reporting separation
-- Questioned email case sensitivity handling
-- Identified missing second UserRepository method claim
-- Drove the decision to use environment variables over hardcoded credentials
+### Developer Driven Decisions
 
+The following features and improvements were specifically driven by developer
+input, challenge and domain knowledge during the development process:
+
+**Architecture & Data Design**
+- Proposed effective dating pattern over simple record overwrite — providing
+  complete immutable audit history of all user changes
+- Challenged timestamp boundary precision — identified that plusNanos(1) was
+  insufficient for PostgreSQL microsecond precision, leading to plusNanos(1000)
+- Proposed separation of operational and reporting databases (CQRS pattern)
+  for production audit reporting
+- Identified need for composite key (ID + effectiveDate) to support
+  versioned records
+
+**Security**
+- Drove addition of role based access control (ROLE_USER, ROLE_ADMIN)
+  beyond basic authentication
+- Identified admin bootstrapping security risk of hardcoded credentials,
+  leading to environment variable based configuration via Spring profiles
+- Proposed admin user lifecycle process — seed, create human admin,
+  delete seeded admin, rotate credentials
+- Challenged password validation to cover full history across all previous
+  versions, not just the current record
+
+**Data Quality**
+- Identified email case sensitivity issue — drove normalisation to lowercase
+  on storage and case insensitive querying
+- Proposed user lifecycle status model (PENDING_VERIFICATION, ACTIVE,
+  SUSPENDED, INACTIVE, CLOSED) reflecting real world financial system requirements
+- Drove addition of effective dating to password reset and change password
+  flows for complete audit trail
+- Identified ambiguous search parameter combinations, leading to explicit
+  validation and rejection of conflicting parameters
+
+**Code Quality**
+- Identified double negative in isTokenExpired() — refactored to
+  isTokenStillValid() for clarity and maintainability
+- Drove addition of JavaDoc to all important classes and methods
+- Challenged YAGNI principle — removed unused extractRole() method
+- Proposed package restructuring into logical sub-packages for
+  maintainability and professionalism
+
+### Future Services Methodology
+
+Subsequent microservices in this project will deliberately use different
+development methodologies to demonstrate broader capability:
+
+| Service | Methodology | Purpose |
+|---|---|---|
+| `user-service` | AI assisted, iterative | Microservice foundations |
+| `account-service` | TDD | Test driven development with JUnit 5 and Mockito |
+| `transaction-service` | SDD with Speckit | Spec driven development |
+| `notification-service` | Event driven | Async messaging with Kafka or RabbitMQ |
 --- 
 
 ## Design Decisions
