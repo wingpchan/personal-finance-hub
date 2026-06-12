@@ -1,3 +1,7 @@
+### ===================================
+### AUTH ENDPOINTS
+### ===================================
+
 ### Login as admin
 POST http://localhost:8081/api/users/login
 Content-Type: application/json
@@ -7,19 +11,7 @@ Content-Type: application/json
   "password": "Admin1!"
 }
 
-eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJhZG1pbkBmaW5hbmNlaHViLmNvbSIsInVzZXJJZCI6MTUsInJvbGUiOiJST0xFX0FETUlOIiwiaWF0IjoxNzgxMTk1NjQwLCJleHAiOjE3ODEyODIwNDB9.lVUO6X7TyagcTo4WwNavScFufVLxqVyCA4woE-4MnEZp6PTaSzy0fnz3VvzSUhrEX1JT8G8rUHORcwMVbDWpYg
-
-### Get all users - admin only
-GET http://localhost:8081/api/users
-Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJib2IuaG9wZUB0ZXN0LmNvbSIsInVzZXJJZCI6Niwicm9sZSI6IlJPTEVfVVNFUiIsImlhdCI6MTc4MTE5NTkzNCwiZXhwIjoxNzgxMjgyMzM0fQ.tOXiR-5hMOv37dUBNGWEkonbdujRLXd62W0lVesMj9ow8NgnORKHnolgC9SPjQC3gSq-zENcRjx7XNjEBivs3A
-#Authorization: Bearer <paste_token_here>
-
-### Get all users - no token
-GET http://localhost:8081/api/users
-Content-Type: application/json
-
-### Login as regular user - email not varified
+### Login as regular user
 POST http://localhost:8081/api/users/login
 Content-Type: application/json
 
@@ -28,14 +20,28 @@ Content-Type: application/json
   "password": "Password1!"
 }
 
-### Login as regular user - active
+### Login - wrong password test
 POST http://localhost:8081/api/users/login
 Content-Type: application/json
 
 {
-  "email": "bob.hope@test.com",
+  "email": "john.smith@example.com",
+  "password": "wrongpassword"
+}
+
+### Login - unverified account test
+POST http://localhost:8081/api/users/login
+Content-Type: application/json
+
+{
+  "email": "pending.user@example.com",
   "password": "Password1!"
 }
+
+### ===================================
+### REGISTRATION ENDPOINTS
+### ===================================
+
 ### Register a new user
 POST http://localhost:8081/api/users/register
 Content-Type: application/json
@@ -43,15 +49,13 @@ X-Created-By: testuser
 
 {
   "title": "MR",
-  "firstName": "Johnny",
+  "firstName": "John",
   "middleName": "William",
-  "lastName": "Smith SNR",
-  "dateOfBirth": "2005-09-25",
-  "email": "john.smith.snr@example.com",
-  "phoneNumber": "+441234567891",
-  "password": "Password1!",
-  "emailVerified": false,
-  "status": "PENDING_VERIFICATION"
+  "lastName": "Smith",
+  "dateOfBirth": "1985-06-15",
+  "email": "john.smith@example.com",
+  "phoneNumber": "+441234567890",
+  "password": "Password1!"
 }
 
 ### Register a second user
@@ -67,164 +71,25 @@ X-Created-By: testuser
   "dateOfBirth": "1990-03-22",
   "email": "jane.jones@example.com",
   "phoneNumber": "+441234567891",
-  "password": "Password1!",
-  "emailVerified": false,
-  "status": "PENDING_VERIFICATION"
-}
-
-### Login
-POST http://localhost:8081/api/users/login
-Content-Type: application/json
-
-{
-  "email": "bob.hope@test.com",
   "password": "Password1!"
 }
 
-### Login - wrong password test
-POST http://localhost:8081/api/users/login
-Content-Type: application/json
-
-{
-  "email": "john.smith@example.com",
-  "password": "wrongpassword"
-}
-
-### Register a sixth user
+### Register - duplicate email test
 POST http://localhost:8081/api/users/register
 Content-Type: application/json
 X-Created-By: testuser
 
 {
   "title": "MR",
-  "firstName": "Tummy",
-  "middleName": "",
-  "lastName": "TumTum",
-  "dateOfBirth": "1990-03-22",
-  "email": "Tummy.TumTum@example.com",
-  "phoneNumber": "+441234567891",
-  "password": "Password1!"
-}
-
-### Update the sixth user
-PUT http://localhost:8081/api/users/14
-Content-Type: application/json
-X-Created-By: testuser
-
-{
-  "title": "DR",
-  "firstName": "Tummy",
-  "middleName": "",
-  "lastName": "TumTum",
-  "dateOfBirth": "1990-03-22",
-  "email": "Tummy.TumTum@example.com",
-  "phoneNumber": "+441234567891",
-  "password": "Password1!"
-}
-
-### Get all current users
-GET http://localhost:8081/api/users
-Content-Type: application/json
-#
-### Get all users including historical
-GET http://localhost:8081/api/users?activeOnly=false
-Content-Type: application/json
-
-### Search including historical
-GET http://localhost:8081/api/users/search?name=smith&activeOnly=false
-Content-Type: application/json
-
-### Get user by ID (replace 1 with actual ID from register response)
-GET http://localhost:8081/api/users/6
-Content-Type: application/json
-
-### Get user by email
-GET http://localhost:8081/api/users/email/john.smith@example.com
-Content-Type: application/json
-
-### Search by name wildcard
-GET http://localhost:8081/api/users/search?name=smi
-Content-Type: application/json
-
-### Search by first name
-GET http://localhost:8081/api/users/search?firstName=jane
-Content-Type: application/json
-
-### Search by first name
-GET http://localhost:8081/api/users/search?firstName=Tim
-Content-Type: application/json
-
-### Search by first name
-GET http://localhost:8081/api/users/search?firstName=Tim&activeOnly=false
-Content-Type: application/json
-
-### Search by first name - include historic
-GET http://localhost:8081/api/users/search?firstName=jane&activeOnly=false
-
-### Search by first and last name
-GET http://localhost:8081/api/users/search?firstName=john&lastName=smith
-Content-Type: application/json
-
-### Update user (replace 1 with actual ID - don't exists)
-PUT http://localhost:8081/api/users/1
-Content-Type: application/json
-X-Updated-By: testuser
-
-{
-  "title": "DR",
   "firstName": "John",
-  "middleName": "William",
-  "lastName": "Smith",
+  "lastName": "Duplicate",
   "dateOfBirth": "1985-06-15",
   "email": "john.smith@example.com",
   "phoneNumber": "+441234567890",
-  "password": "Password1!",
-  "emailVerified": true,
-  "status": "ACTIVE"
+  "password": "Password1!"
 }
 
-### Update user (6 ctual ID)
-PUT http://localhost:8081/api/users/6
-Content-Type: application/json
-X-Updated-By: testuser
-
-{
-  "title": "DR",
-  "firstName": "Bob",
-  "middleName": "William",
-  "lastName": "Hope",
-  "dateOfBirth": "1985-06-15",
-  "email": "bob.hope@test.com",
-  "phoneNumber": "+441234567894",
-  "password": "Password1!",
-  "emailVerified": true,
-  "status": "ACTIVE"
-}
-
-### Get version history for user (replace 1 with actual ID)
-GET http://localhost:8081/api/users/14/history
-Content-Type: application/json
-
-### Verify email (replace 6 with actual ID)
-PATCH http://localhost:8081/api/users/6/verify-email
-Content-Type: application/json
-X-Updated-By: testuser
-
-### Update status (replace 1 with actual ID)
-PATCH http://localhost:8081/api/users/4/status?status=ACTIVE
-Content-Type: application/json
-X-Updated-By: testuser
-
-### Delete user (replace 1 with actual ID)
-DELETE http://localhost:8081/api/users/14
-Content-Type: application/json
-X-Deleted-By: testuser
-
-### Get history after delete (replace 1 with actual ID)
-GET http://localhost:8081/api/users/1/history
-Content-Type: application/json
-
-### Test validation error
+### Register - invalid email test
 POST http://localhost:8081/api/users/register
 Content-Type: application/json
 X-Created-By: testuser
@@ -238,3 +103,238 @@ X-Created-By: testuser
   "phoneNumber": "+441234567890",
   "password": "Password1!"
 }
+
+### Register - weak password test
+POST http://localhost:8081/api/users/register
+Content-Type: application/json
+X-Created-By: testuser
+
+{
+  "title": "MR",
+  "firstName": "Test",
+  "lastName": "User",
+  "dateOfBirth": "1990-01-01",
+  "email": "test.user@example.com",
+  "phoneNumber": "+441234567890",
+  "password": "weakpassword"
+}
+
+### Register admin user (requires ROLE_ADMIN token)
+POST http://localhost:8081/api/users/register/admin
+Content-Type: application/json
+X-Created-By: system
+Authorization: Bearer <paste_admin_token_here>
+
+{
+  "title": "MS",
+  "firstName": "Admin",
+  "lastName": "User",
+  "dateOfBirth": "1980-01-01",
+  "email": "admin2@financehub.com",
+  "phoneNumber": "+441234567892",
+  "password": "Admin1!"
+}
+
+### ===================================
+### GET ENDPOINTS
+### ===================================
+
+### Get all current users (admin only)
+GET http://localhost:8081/api/users
+Content-Type: application/json
+Authorization: Bearer <paste_admin_token_here>
+
+### Get all users including inactive (admin only)
+GET http://localhost:8081/api/users?activeOnly=false
+Content-Type: application/json
+Authorization: Bearer <paste_admin_token_here>
+
+### Get user by ID (replace 1 with actual ID)
+GET http://localhost:8081/api/users/1
+Content-Type: application/json
+Authorization: Bearer <paste_token_here>
+
+### Get user by email
+GET http://localhost:8081/api/users/email/john.smith@example.com
+Content-Type: application/json
+Authorization: Bearer <paste_token_here>
+
+### Get user version history (replace 1 with actual ID)
+GET http://localhost:8081/api/users/1/history
+Content-Type: application/json
+Authorization: Bearer <paste_token_here>
+
+### Get user at point in time (replace 1 with actual ID)
+GET http://localhost:8081/api/users/1/at?queryDate=2026-06-10T10:00:00
+Content-Type: application/json
+Authorization: Bearer <paste_token_here>
+
+### ===================================
+### SEARCH ENDPOINTS (admin only)
+### ===================================
+
+### Search by name wildcard
+GET http://localhost:8081/api/users/search?name=smi
+Content-Type: application/json
+Authorization: Bearer <paste_admin_token_here>
+
+### Search by first name only
+GET http://localhost:8081/api/users/search?firstName=john
+Content-Type: application/json
+Authorization: Bearer <paste_admin_token_here>
+
+### Search by last name only
+GET http://localhost:8081/api/users/search?lastName=smith
+Content-Type: application/json
+Authorization: Bearer <paste_admin_token_here>
+
+### Search by first and last name
+GET http://localhost:8081/api/users/search?firstName=john&lastName=smith
+Content-Type: application/json
+Authorization: Bearer <paste_admin_token_here>
+
+### Search including inactive users
+GET http://localhost:8081/api/users/search?name=smith&activeOnly=false
+Content-Type: application/json
+Authorization: Bearer <paste_admin_token_here>
+
+### Search - ambiguous parameters test
+GET http://localhost:8081/api/users/search?name=john&firstName=john
+Content-Type: application/json
+Authorization: Bearer <paste_admin_token_here>
+
+### ===================================
+### UPDATE ENDPOINTS
+### ===================================
+
+### Update user (replace 1 with actual ID)
+PUT http://localhost:8081/api/users/1
+Content-Type: application/json
+X-Updated-By: testuser
+Authorization: Bearer <paste_token_here>
+
+{
+  "title": "DR",
+  "firstName": "John",
+  "middleName": "William",
+  "lastName": "Smith",
+  "dateOfBirth": "1985-06-15",
+  "email": "john.smith@example.com",
+  "phoneNumber": "+441234567890",
+  "password": "Password1!"
+}
+
+### Verify email (replace 1 with actual ID)
+PATCH http://localhost:8081/api/users/1/verify-email
+Content-Type: application/json
+X-Updated-By: testuser
+Authorization: Bearer <paste_token_here>
+
+### Update status (admin only - replace 1 with actual ID)
+PATCH http://localhost:8081/api/users/1/status?status=ACTIVE
+Content-Type: application/json
+X-Updated-By: testuser
+Authorization: Bearer <paste_admin_token_here>
+
+### Reinstate deleted user (admin only - replace 1 with actual ID)
+PATCH http://localhost:8081/api/users/1/reinstate
+Content-Type: application/json
+X-Updated-By: admin
+Authorization: Bearer <paste_admin_token_here>
+
+### ===================================
+### PASSWORD ENDPOINTS
+### ===================================
+
+### Change password (replace 1 with actual ID)
+PATCH http://localhost:8081/api/users/1/change-password
+Content-Type: application/json
+X-Updated-By: testuser
+Authorization: Bearer <paste_token_here>
+
+{
+  "currentPassword": "Password1!",
+  "newPassword": "NewPassword1!"
+}
+
+### Change password - wrong current password test
+PATCH http://localhost:8081/api/users/1/change-password
+Content-Type: application/json
+X-Updated-By: testuser
+Authorization: Bearer <paste_token_here>
+
+{
+  "currentPassword": "WrongPassword1!",
+  "newPassword": "NewPassword1!"
+}
+
+### Change password - previously used password test
+PATCH http://localhost:8081/api/users/1/change-password
+Content-Type: application/json
+X-Updated-By: testuser
+Authorization: Bearer <paste_token_here>
+
+{
+  "currentPassword": "NewPassword1!",
+  "newPassword": "Password1!"
+}
+
+### Request password reset
+POST http://localhost:8081/api/users/password-reset/request
+Content-Type: application/json
+
+{
+  "email": "john.smith@example.com"
+}
+
+### Confirm password reset (paste token from above response)
+POST http://localhost:8081/api/users/password-reset/confirm
+Content-Type: application/json
+
+{
+  "resetToken": "paste-token-here",
+  "newPassword": "Password1!"
+}
+
+### Confirm password reset - expired/invalid token test
+POST http://localhost:8081/api/users/password-reset/confirm
+Content-Type: application/json
+
+{
+  "resetToken": "invalid-token-12345",
+  "newPassword": "Password1!"
+}
+
+### ===================================
+### DELETE ENDPOINT
+### ===================================
+
+### Soft delete user (replace 1 with actual ID)
+DELETE http://localhost:8081/api/users/1
+Content-Type: application/json
+X-Deleted-By: testuser
+Authorization: Bearer <paste_token_here>
+
+### Verify user deleted - should return 404
+GET http://localhost:8081/api/users/1
+Content-Type: application/json
+Authorization: Bearer <paste_token_here>
+
+### Get history after delete - should show closed record
+GET http://localhost:8081/api/users/1/history
+Content-Type: application/json
+Authorization: Bearer <paste_token_here>
+
+### ===================================
+### SECURITY TESTS
+### ===================================
+
+### No token test - should return 401
+GET http://localhost:8081/api/users
+Content-Type: application/json
+
+### Wrong role test - regular user accessing admin endpoint
+### Login as regular user first, then use that token here
+GET http://localhost:8081/api/users
+Content-Type: application/json
+Authorization: Bearer <paste_user_token_here>

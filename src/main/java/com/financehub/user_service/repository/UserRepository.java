@@ -27,16 +27,16 @@ public interface UserRepository extends JpaRepository<User, UserId> {
     List<User> findAllVersionsById(@Param("id") Long id);
 
     // Get current record by email
-    @Query("SELECT u FROM User u WHERE u.email = :email " +
+    @Query("SELECT u FROM User u WHERE LOWER(u.email) = LOWER(:email) " +
             "AND u.endDate IS NULL")
     Optional<User> findCurrentByEmail(@Param("email") String email);
 
     // Check if email exists on any current record
-    @Query("SELECT COUNT(u) > 0 FROM User u WHERE u.email = :email " +
+    @Query("SELECT COUNT(u) > 0 FROM User u WHERE LOWER(u.email) = LOWER(:email) " +
             "AND u.endDate IS NULL")
     boolean existsByEmail(@Param("email") String email);
 
-    @Query("SELECT COUNT(u) > 0 FROM User u WHERE u.email = :email")
+    @Query("SELECT COUNT(u) > 0 FROM User u WHERE LOWER(u.email) = LOWER(:email)")
     boolean existsByEmailAny(@Param("email") String email);
 
     // Get all current active users
@@ -154,4 +154,14 @@ public interface UserRepository extends JpaRepository<User, UserId> {
     List<User> findAllByFirstNameAndLastNameContaining(
             @Param("firstName") String firstName,
             @Param("lastName") String lastName);
+
+    // Find current user by reset token
+    @Query("SELECT u FROM User u WHERE u.resetToken = :resetToken " +
+            "AND u.endDate IS NULL")
+    Optional<User> findByResetToken(@Param("resetToken") String resetToken);
+
+    // Get all password hashes for a user across all versions
+    @Query("SELECT u.password FROM User u WHERE u.userId.id = :id " +
+            "ORDER BY u.userId.effectiveDate DESC")
+    List<String> findAllPasswordsById(@Param("id") Long id);
 }

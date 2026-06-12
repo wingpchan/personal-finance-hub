@@ -1,7 +1,6 @@
 package com.financehub.user_service.controller;
 
-import com.financehub.user_service.dto.LoginRequest;
-import com.financehub.user_service.dto.LoginResponse;
+import com.financehub.user_service.dto.*;
 import com.financehub.user_service.service.UserService;
 import com.financehub.user_service.enums.UserStatus;
 import com.financehub.user_service.entity.User;
@@ -11,7 +10,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/users")
@@ -157,5 +158,43 @@ public class UserController {
             @RequestParam UserStatus status,
             @RequestHeader(value = "X-Updated-By", defaultValue = "system") String updatedBy) {
         return ResponseEntity.ok(userService.updateStatus(id, status, updatedBy));
+    }
+
+    // Change password
+    @PatchMapping("/{id}/change-password")
+    public ResponseEntity<Void> changePassword(
+            @PathVariable Long id,
+            @Valid @RequestBody ChangePasswordRequest request,
+            @RequestHeader(value = "X-Updated-By", defaultValue = "system") String updatedBy) {
+        userService.changePassword(
+                id,
+                request.getCurrentPassword(),
+                request.getNewPassword(),
+                updatedBy);
+        return ResponseEntity.noContent().build();
+    }
+
+    // Request password reset
+    @PostMapping("/password-reset/request")
+    public ResponseEntity<Map<String, String>> requestPasswordReset(
+            @Valid @RequestBody PasswordResetRequest request) {
+        String resetToken = userService.requestPasswordReset(request.getEmail());
+
+        // In production the token would be emailed, not returned here
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Password reset token generated successfully");
+        response.put("resetToken", resetToken);
+        response.put("note", "In production this token would be sent via email");
+        return ResponseEntity.ok(response);
+    }
+
+    // Confirm password reset
+    @PostMapping("/password-reset/confirm")
+    public ResponseEntity<Void> confirmPasswordReset(
+            @Valid @RequestBody PasswordResetConfirmRequest request) {
+        userService.confirmPasswordReset(
+                request.getResetToken(),
+                request.getNewPassword());
+        return ResponseEntity.noContent().build();
     }
 }

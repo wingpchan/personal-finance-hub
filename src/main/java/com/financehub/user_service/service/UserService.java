@@ -42,7 +42,7 @@ public class UserService {
 
     public LoginResponse login(LoginRequest loginRequest) {
         // Find current active user by email
-        User user = userRepository.findCurrentByEmail(loginRequest.getEmail())
+        User user = userRepository.findCurrentByEmail(loginRequest.getEmail().toLowerCase())
                 .orElseThrow(() -> new RuntimeException("Invalid email or password"));
 
         // Check account status
@@ -124,7 +124,8 @@ public class UserService {
         // Set audit fields
         user.setCreatedBy(createdBy);
         user.setUpdatedBy(createdBy);
-
+        // Normalise email to lowercase before storing
+        user.setEmail(user.getEmail().toLowerCase());
         // Default role
         user.setRole(Role.ROLE_USER);
         // Default status
@@ -197,8 +198,10 @@ public class UserService {
                 .orElseThrow(() -> new RuntimeException("User not found with ID: " + id));
 
         // Check if new email is already in use by a different active user
-        if (!updatedUser.getEmail().equals(currentUser.getEmail())
-                && userRepository.existsByEmail(updatedUser.getEmail())) {
+        // Normalise the updateUser email address before check and later store
+        String lowerUpdateUserEmail = updatedUser.getEmail().toLowerCase();
+        if (!lowerUpdateUserEmail.equals(currentUser.getEmail())
+                && userRepository.existsByEmail(lowerUpdateUserEmail)) {
             throw new RuntimeException("Email already in use: " + updatedUser.getEmail());
         }
 
@@ -215,6 +218,8 @@ public class UserService {
         updatedUser.setUserId(newUserId);
         updatedUser.setCreatedBy(currentUser.getCreatedBy());
         updatedUser.setUpdatedBy(updatedBy);
+        // Already normalised email to lowercase
+        updatedUser.setEmail(lowerUpdateUserEmail);
         updatedUser.setEmailVerified(currentUser.isEmailVerified());
 
         // Hash password
@@ -302,6 +307,133 @@ public class UserService {
             admin.setPassword(adminPassword);
             admin.setRole(Role.ROLE_ADMIN);
             registerAdmin(admin, "system");
+        }
+    }
+
+    public void changePassword(Long id, String currentPassword,
+                               String newPassword, String updatedBy) {
+        // Find current active user
+        User currentUser = userRepository.findCurrentById(id)
+                .orElseThrow(() -> new RuntimeException("User not found with ID: " + id));
+
+        // Verify current password is correct
+        if (!passwordEncoder.matches(currentPassword, currentUser.getPassword())) {
+            throw new RuntimeException("Current password is incorrect");
+        }
+
+        // Ensure new password not previously used
+        validatePasswordNotPreviouslyUsed(id, newPassword);
+
+        // Create new version with updated password
+        LocalDateTime now = LocalDateTime.now();
+        UserId newUserId = new UserId();
+        newUserId.setId(id);
+        newUserId.setEffectiveDate(now.plusNanos(1000));
+
+        // Close current record
+        currentUser.setEndDate(now);
+        currentUser.setUpdatedBy(updatedBy);
+        userRepository.save(currentUser);
+
+        // Create new version
+        User updatedUser = new User();
+        updatedUser.setUserId(newUserId);
+        updatedUser.setTitle(currentUser.getTitle());
+        updatedUser.setFirstName(currentUser.getFirstName());
+        updatedUser.setMiddleName(currentUser.getMiddleName());
+        updatedUser.setLastName(currentUser.getLastName());
+        updatedUser.setDateOfBirth(currentUser.getDateOfBirth());
+        updatedUser.setEmail(currentUser.getEmail());
+        updatedUser.setPhoneNumber(currentUser.getPhoneNumber());
+        updatedUser.setPassword(passwordEncoder.encode(newPassword));
+        updatedUser.setEmailVerified(currentUser.isEmailVerified());
+        updatedUser.setStatus(currentUser.getStatus());
+        updatedUser.setRole(currentUser.getRole());
+        updatedUser.setCreatedBy(currentUser.getCreatedBy());
+        updatedUser.setUpdatedBy(updatedBy);
+
+        userRepository.save(updatedUser);
+    }
+
+    // Request password reset - generates reset token
+    public String requestPasswordReset(String email) {
+        // Find current active user
+        User currentUser = userRepository.findCurrentByEmail(email)
+                .orElseThrow(() -> new RuntimeException("No active account found for email: " + email));
+
+        // Generate a secure random token
+        String resetToken = java.util.UUID.randomUUID().toString();
+
+        // Set token and expiry (1 hour from now)
+        currentUser.setResetToken(resetToken);
+        currentUser.setResetTokenExpiry(LocalDateTime.now().plusHours(1));
+        currentUser.setUpdatedBy("system");
+        userRepository.save(currentUser);
+
+        // In production this token would be emailed via notification-service
+        // For now we return it directly for testing purposes
+        return resetToken;
+    }
+
+    // Confirm password reset - validates token and updates password
+    public void confirmPasswordReset(String resetToken, String newPassword) {
+        // Find user by reset token
+        User currentUser = userRepository.findByResetToken(resetToken)
+                .orElseThrow(() -> new RuntimeException("Invalid or expired reset token"));
+
+        // Check token has not expired
+        if (currentUser.getResetTokenExpiry() == null ||
+                LocalDateTime.now().isAfter(currentUser.getResetTokenExpiry())) {
+            throw new RuntimeException("Reset token has expired - please request a new one");
+        }
+
+        // Create new version with updated password
+        LocalDateTime now = LocalDateTime.now();
+
+        // Ensure new password not previously used
+        validatePasswordNotPreviouslyUsed(
+                currentUser.getUserId().getId(), newPassword);
+
+        // Close current record
+        currentUser.setEndDate(now);
+        currentUser.setUpdatedBy("system");
+        userRepository.save(currentUser);
+
+        // Create new version
+        UserId newUserId = new UserId();
+        newUserId.setId(currentUser.getUserId().getId());
+        newUserId.setEffectiveDate(now.plusNanos(1000));
+
+        User updatedUser = new User();
+        updatedUser.setUserId(newUserId);
+        updatedUser.setTitle(currentUser.getTitle());
+        updatedUser.setFirstName(currentUser.getFirstName());
+        updatedUser.setMiddleName(currentUser.getMiddleName());
+        updatedUser.setLastName(currentUser.getLastName());
+        updatedUser.setDateOfBirth(currentUser.getDateOfBirth());
+        updatedUser.setEmail(currentUser.getEmail());
+        updatedUser.setPhoneNumber(currentUser.getPhoneNumber());
+        updatedUser.setPassword(passwordEncoder.encode(newPassword));
+        updatedUser.setEmailVerified(currentUser.isEmailVerified());
+        updatedUser.setStatus(currentUser.getStatus());
+        updatedUser.setRole(currentUser.getRole());
+        updatedUser.setCreatedBy(currentUser.getCreatedBy());
+        updatedUser.setUpdatedBy("system");
+        // Clear reset token on new version
+        updatedUser.setResetToken(null);
+        updatedUser.setResetTokenExpiry(null);
+
+        userRepository.save(updatedUser);
+    }
+
+    // Check new password has not been used before
+    private void validatePasswordNotPreviouslyUsed(Long id, String newPassword) {
+        List<String> previousPasswords = userRepository.findAllPasswordsById(id);
+        boolean previouslyUsed = previousPasswords.stream()
+                .anyMatch(oldHash -> passwordEncoder.matches(newPassword, oldHash));
+        if (previouslyUsed) {
+            throw new RuntimeException(
+                    "New password cannot be the same as any previously used password");
         }
     }
 }

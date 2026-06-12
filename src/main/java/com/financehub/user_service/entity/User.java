@@ -94,6 +94,12 @@ public class User {
     @Column(name = "updated_by", length = 100)
     private String updatedBy;
 
+    @Column(name = "reset_token", length = 100)
+    private String resetToken;
+
+    @Column(name = "reset_token_expiry")
+    private LocalDateTime resetTokenExpiry;
+
     // JPA lifecycle hooks
     @PrePersist
     protected void onCreate() {

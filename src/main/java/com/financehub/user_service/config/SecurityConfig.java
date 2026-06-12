@@ -38,6 +38,8 @@ public class SecurityConfig {
                         // Public endpoints
                         .requestMatchers(HttpMethod.POST, "/api/users/register").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/users/login").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/users/password-reset/request").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/users/password-reset/confirm").permitAll()
 
                         // Admin only endpoints
                         .requestMatchers(HttpMethod.POST, "/api/users/register/admin")
@@ -60,7 +62,7 @@ public class SecurityConfig {
                         .accessDeniedHandler(accessDeniedHandler())
                         .authenticationEntryPoint(authenticationEntryPoint())
                 )
-                
+
                 // Add JWT filter before Spring's built in auth filter
                 .addFilterBefore(jwtAuthFilter,
                         UsernamePasswordAuthenticationFilter.class);
