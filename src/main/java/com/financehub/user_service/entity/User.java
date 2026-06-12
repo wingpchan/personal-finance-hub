@@ -1,12 +1,32 @@
 package com.financehub.user_service.entity;
 
 import com.financehub.user_service.enums.*;
+import com.financehub.user_service.repository.UserRepository;
+import com.financehub.user_service.service.UserService;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+/**
+ * JPA entity representing a user in the Personal Finance Hub system.
+ *
+ * Implements effective dating — rather than overwriting records on update,
+ * a new version is inserted with a new effectiveDate and the previous version
+ * is closed by setting its endDate. This provides a complete immutable audit
+ * history of all changes.
+ *
+ * The current active record for any user is identified by endDate IS NULL.
+ * All historical versions are retained and queryable via point in time queries.
+ *
+ * Passwords are never stored in plain text — BCrypt hashing is applied
+ * in the service layer before persistence.
+ *
+ * @see UserId
+ * @see UserService
+ * @see UserRepository
+ */
 @Data
 @Entity
 @Table(name = "users")
@@ -101,6 +121,15 @@ public class User {
     private LocalDateTime resetTokenExpiry;
 
     // JPA lifecycle hooks
+    /**
+     * Sets audit timestamps and effective date on initial persist.
+     * If effectiveDate is not explicitly set, defaults to current timestamp.
+     * If status is not set, defaults to PENDING_VERIFICATION.
+     * If role is not set, defaults to ROLE_USER.
+     *
+     * Note: createdAt is marked updatable = false — once set it is never
+     * overwritten, providing a reliable record of when the version was created.
+     */
     @PrePersist
     protected void onCreate() {
         LocalDateTime now = LocalDateTime.now();
@@ -117,7 +146,12 @@ public class User {
             role = Role.ROLE_USER;
         }
     }
-
+    
+    /**
+     * Updates the updatedAt audit timestamp on every subsequent save.
+     * createdAt and createdBy are intentionally not updated here — they
+     * represent the original creation of this version and must remain immutable.
+     */
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();

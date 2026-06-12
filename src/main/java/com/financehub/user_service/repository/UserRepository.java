@@ -10,18 +10,57 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Spring Data JPA repository for User entity access.
+ *
+ * Uses composite key UserId (id + effectiveDate) rather than a simple Long.
+ * All queries are effective-dating aware — standard operations filter by
+ * endDate IS NULL to return only current active records.
+ *
+ * Custom JPQL queries are used throughout rather than derived query method
+ * names because the effective dating condition must be applied consistently
+ * across all queries — explicit @Query annotations make this clearer and
+ * less error prone than embedding the condition in method names.
+ *
+ * @see User
+ * @see UserId
+ */
 @Repository
 public interface UserRepository extends JpaRepository<User, UserId> {
 
+    /**
+     * Retrieves the next value from the PostgreSQL user_sequence.
+     * Used to manually assign IDs to new user registrations since JPA
+     * cannot auto-generate one part of a composite key.
+     *
+     * The sequence guarantees uniqueness but not gaplessness — gaps are
+     * expected and acceptable due to failed transactions and testing.
+     *
+     * @return next sequence value as Long
+     */
     @Query(value = "SELECT nextval('user_sequence')", nativeQuery = true)
     Long getNextUserId();
 
-    // Get current active record by id
+    /**
+     * Retrieves the current active record for a user by their ID.
+     * Current active record is identified by endDate IS NULL.
+     * Returns empty Optional if user does not exist or has been soft deleted.
+     *
+     * @param id the user's generated sequence ID
+     * @return Optional containing the current active User, or empty if not found
+     */
     @Query("SELECT u FROM User u WHERE u.userId.id = :id " +
             "AND u.endDate IS NULL")
     Optional<User> findCurrentById(@Param("id") Long id);
 
-    // Get full version history for a user
+    /**
+     * Retrieves all versions of a user record ordered by effectiveDate descending.
+     * Includes all historical versions and the current active record.
+     * Used for audit history and point in time reporting.
+     *
+     * @param id the user's generated sequence ID
+     * @return List of all User versions, most recent first
+     */
     @Query("SELECT u FROM User u WHERE u.userId.id = :id " +
             "ORDER BY u.userId.effectiveDate DESC")
     List<User> findAllVersionsById(@Param("id") Long id);
@@ -160,7 +199,17 @@ public interface UserRepository extends JpaRepository<User, UserId> {
             "AND u.endDate IS NULL")
     Optional<User> findByResetToken(@Param("resetToken") String resetToken);
 
-    // Get all password hashes for a user across all versions
+    /**
+     * Retrieves all BCrypt hashed passwords across all versions of a user.
+     * Used to enforce password history validation — prevents users from
+     * reusing any previously used password.
+     *
+     * Leverages the effective dating model to access historical records
+     * without additional audit infrastructure.
+     *
+     * @param id the user's generated sequence ID
+     * @return List of BCrypt hashed passwords, most recent first
+     */
     @Query("SELECT u.password FROM User u WHERE u.userId.id = :id " +
             "ORDER BY u.userId.effectiveDate DESC")
     List<String> findAllPasswordsById(@Param("id") Long id);

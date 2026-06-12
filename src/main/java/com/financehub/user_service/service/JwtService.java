@@ -11,6 +11,22 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
 
+/**
+ * Service responsible for JWT token generation and validation.
+ *
+ * Tokens are signed using HMAC-SHA256 with a secret key loaded from
+ * environment configuration — never hardcoded in source code.
+ *
+ * Token payload contains:
+ * - subject: user email address
+ * - userId: generated sequence ID
+ * - role: user role for authorisation decisions
+ * - issuedAt: token creation timestamp
+ * - expiration: configurable expiry (default 24 hours)
+ *
+ * @see JwtAuthFilter
+ * @see SecurityConfig
+ */
 @Service
 public class JwtService {
 
@@ -20,7 +36,15 @@ public class JwtService {
     @Value("${jwt.expiration}")
     private long expiration;
 
-    // Generate a JWT token for a user
+    /**
+     * Generates a signed JWT token for an authenticated user.
+     * Token is signed with HMAC-SHA256 using the configured secret key.
+     *
+     * @param userId the user's generated sequence ID included as a claim
+     * @param email the user's email address used as the token subject
+     * @param role the user's role included as a claim for authorisation
+     * @return signed JWT token string
+     */
     public String generateToken(Long userId, String email, Role role) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + expiration);
@@ -53,7 +77,18 @@ public class JwtService {
                 .toLocalDateTime();
     }
 
-    // Validate token
+    /**
+     * Validates a JWT token against an expected email address.
+     * Checks both that the email matches the token subject and that
+     * the token has not expired.
+     *
+     * Returns false rather than throwing for invalid tokens — callers
+     * should treat false as unauthenticated rather than an error condition.
+     *
+     * @param token the JWT token string to validate
+     * @param email the expected email address to match against
+     * @return true if token is valid and not expired, false otherwise
+     */
     public boolean isTokenValid(String token, String email) {
         try {
             String extractedEmail = extractEmail(token);

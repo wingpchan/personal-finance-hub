@@ -1,5 +1,6 @@
 package com.financehub.user_service.exception;
 
+import com.financehub.user_service.controller.UserController;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -10,6 +11,23 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Global exception handler for the user-service REST API.
+ *
+ * Intercepts exceptions thrown by controllers and returns consistent
+ * JSON error responses. Prevents raw stack traces from being exposed
+ * in API responses — a security best practice.
+ *
+ * Handles three categories of exception:
+ * - Validation failures from @Valid annotations → 400 Bad Request
+ * - Business logic errors from RuntimeException → 409 Conflict
+ * - Unexpected errors from Exception → 500 Internal Server Error
+ *
+ * All responses share a consistent structure containing timestamp,
+ * status code, error description and message for easy client handling.
+ *
+ * @see UserController
+ */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 

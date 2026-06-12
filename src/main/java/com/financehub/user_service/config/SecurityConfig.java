@@ -1,5 +1,6 @@
 package com.financehub.user_service.config;
 
+import com.financehub.user_service.service.JwtService;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -13,6 +14,26 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+/**
+ * Spring Security configuration for the user-service.
+ *
+ * Configures stateless JWT based authentication — no server side sessions
+ * are created or maintained. Every request must carry a valid JWT token.
+ *
+ * CSRF protection is disabled — not required for stateless APIs as JWT
+ * tokens in Authorization headers cannot be exploited by CSRF attacks.
+ *
+ * Endpoint access rules:
+ * - Public: register, login, password reset
+ * - ROLE_ADMIN: get all users, search, status update, reinstate, admin register
+ * - Authenticated: all other endpoints require a valid JWT token
+ *
+ * Custom 401 and 403 handlers return consistent JSON error responses
+ * rather than Spring Security's default HTML error pages.
+ *
+ * @see JwtAuthFilter
+ * @see JwtService
+ */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {

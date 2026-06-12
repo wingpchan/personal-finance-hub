@@ -37,6 +37,32 @@ exposing a REST API:
 
 ---
 
+## Development Approach
+
+This microservice was developed collaboratively with Claude (Anthropic's AI assistant)
+as a learning and portfolio exercise.
+
+The development process involved:
+- **AI assisted code generation** — Claude produced initial implementations
+- **Architectural review** — design decisions challenged, questioned and refined
+- **Feature driven development** — requirements evolved through conversation
+- **Debugging and testing** — issues identified and resolved through active testing
+- **Security hardening** — vulnerabilities identified and addressed iteratively
+
+This reflects the modern reality of software development where experienced developers
+leverage AI tools to accelerate delivery while applying their domain knowledge,
+architectural thinking and quality standards to validate and improve the output.
+
+Notable examples of developer input during this project:
+- Challenged the effective dating boundary timestamp approach
+- Identified the need for full password history validation
+- Proposed CQRS pattern for audit reporting separation
+- Questioned email case sensitivity handling
+- Identified missing second UserRepository method claim
+- Drove the decision to use environment variables over hardcoded credentials
+
+--- 
+
 ## Design Decisions
 
 ### Effective Dating

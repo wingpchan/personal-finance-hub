@@ -16,6 +16,25 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import java.util.List;
 import java.io.IOException;
 
+/**
+ * Spring Security filter that intercepts every HTTP request and validates
+ * JWT tokens from the Authorization header.
+ *
+ * Extends OncePerRequestFilter — Spring guarantees this runs exactly once
+ * per request regardless of filter chain configuration.
+ *
+ * Filter logic:
+ * 1. Extract Bearer token from Authorization header
+ * 2. Parse email and validate token signature and expiry
+ * 3. Verify user exists and is currently active
+ * 4. Set authentication in SecurityContext with user's role as authority
+ *
+ * Requests without a valid token are passed through unauthenticated —
+ * SecurityConfig determines which endpoints require authentication.
+ *
+ * @see SecurityConfig
+ * @see JwtService
+ */
 @Component
 public class JwtAuthFilter extends OncePerRequestFilter {
 

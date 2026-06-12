@@ -15,6 +15,22 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Business logic layer for user management operations.
+ *
+ * Implements effective dating — updates and deletes never overwrite existing
+ * records. Updates close the current version and insert a new one.
+ * Deletes set endDate on the current version (soft delete).
+ *
+ * All password operations use BCrypt hashing via Spring Security Crypto.
+ * Plain text passwords are never persisted or logged.
+ *
+ * Password history is validated across all previous versions using the
+ * effective dating audit trail — no separate password history table required.
+ *
+ * @see UserRepository
+ * @see JwtService
+ */
 @Service
 public class UserService {
 
@@ -40,6 +56,21 @@ public class UserService {
         this.passwordEncoder = new BCryptPasswordEncoder();
     }
 
+    /**
+     * Authenticates a user and returns a JWT token on success.
+     * Email lookup is case insensitive — normalised before querying.
+     *
+     * Deliberately uses the same error message for both invalid email
+     * and invalid password to prevent user enumeration attacks — an
+     * attacker cannot determine whether an email address is registered.
+     *
+     * Account status is checked before password validation — suspended,
+     * inactive and closed accounts are rejected with specific messages.
+     *
+     * @param loginRequest the login credentials
+     * @return LoginResponse containing JWT token, expiry and basic user details
+     * @throws RuntimeException if credentials are invalid or account is not active
+     */
     public LoginResponse login(LoginRequest loginRequest) {
         // Find current active user by email
         User user = userRepository.findCurrentByEmail(loginRequest.getEmail().toLowerCase())
@@ -84,7 +115,17 @@ public class UserService {
         );
     }
 
-    // Admin only - create an admin user
+    /**
+     * Registers an admin user with ACTIVE status, ROLE_ADMIN and emailVerified = true.
+     * Admin users bypass the email verification flow.
+     * Should only be called internally — the corresponding endpoint is
+     * protected by ROLE_ADMIN.
+     *
+     * @param user the admin user details
+     * @param createdBy audit field identifying who initiated the registration
+     * @return the saved admin User entity
+     * @throws RuntimeException if the email address is already registered
+     */
     public User registerAdmin(User user, String createdBy) {
         if (userRepository.existsByEmail(user.getEmail())) {
             throw new RuntimeException("Email already registered: " + user.getEmail());
@@ -106,7 +147,17 @@ public class UserService {
         return userRepository.save(user);
     }
 
-    // Register a new user
+    /**
+     * Registers a new user with PENDING_VERIFICATION status and ROLE_USER.
+     * Email is normalised to lowercase before storage.
+     * Password is BCrypt hashed before storage.
+     * Effective date is set to current timestamp.
+     *
+     * @param user the user details from the registration request
+     * @param createdBy audit field identifying who initiated the registration
+     * @return the saved User entity with generated ID and composite key
+     * @throws RuntimeException if the email address is already registered
+     */
     public User registerUser(User user, String createdBy) {
         if (userRepository.existsByEmail(user.getEmail())) {
             throw new RuntimeException("Email already registered: " + user.getEmail());
@@ -191,7 +242,23 @@ public class UserService {
         return userRepository.findByIdAtPointInTime(id, queryDate);
     }
 
-    // Update user - creates a new version
+    /**
+     * Updates a user by closing the current version and inserting a new one.
+     * The new version effectiveDate is set to 1 microsecond after the endDate
+     * of the closed version to avoid boundary clash in point in time queries.
+     *
+     * Email uniqueness is validated against current active records only —
+     * the same email can exist on historical closed records.
+     *
+     * Password is rehashed on every update — the incoming password is
+     * treated as plain text regardless of source.
+     *
+     * @param id the user's generated sequence ID
+     * @param updatedUser the updated user details
+     * @param updatedBy audit field identifying who made the change
+     * @return the newly created User version
+     * @throws RuntimeException if user not found or email already in use
+     */
     public User updateUser(Long id, User updatedUser, String updatedBy) {
         // Find current active record
         User currentUser = userRepository.findCurrentById(id)
@@ -228,7 +295,15 @@ public class UserService {
         return userRepository.save(updatedUser);
     }
 
-    // Soft delete
+    /**
+     * Soft deletes a user by setting endDate on the current active record.
+     * The record is never physically removed — full history is preserved.
+     * A deleted user can be reinstated by an admin via reinstateUser().
+     *
+     * @param id the user's generated sequence ID
+     * @param deletedBy audit field identifying who performed the deletion
+     * @throws RuntimeException if no active user found with the given ID
+     */
     public void deleteUser(Long id, String deletedBy) {
         User currentUser = userRepository.findCurrentById(id)
                 .orElseThrow(() -> new RuntimeException("User not found with ID: " + id));
@@ -237,7 +312,20 @@ public class UserService {
         userRepository.save(currentUser);
     }
 
-    // Admin only - reinstate a deleted user
+    /**
+     * Reinstates a soft deleted user by creating a new active version
+     * based on the most recent closed version.
+     * Only available to ROLE_ADMIN.
+     *
+     * Leverages the effective dating model — reinstatement is simply
+     * a new version insert with endDate = null, consistent with all
+     * other update operations.
+     *
+     * @param id the user's generated sequence ID
+     * @param reinstatedBy audit field identifying who performed the reinstatement
+     * @return the newly created active User version
+     * @throws RuntimeException if user not found or user is already active
+     */
     public User reinstateUser(Long id, String reinstatedBy) {
         // Get the latest version regardless of active status
         List<User> versions = userRepository.findAllVersionsById(id);
@@ -295,6 +383,18 @@ public class UserService {
         return userRepository.save(currentUser);
     }
 
+    /**
+     * Creates a default admin user on application startup if none exists.
+     * Credentials are loaded from environment variables via Spring profiles —
+     * never hardcoded in source code.
+     *
+     * In production: after seeding, a human admin should create their own
+     * account and the seeded admin should be deleted. Environment variables
+     * should then be rotated.
+     *
+     * Uses existsByEmailAny rather than existsByEmail to check across all
+     * records including historical, preventing re-seeding after deletion.
+     */
     public void seedAdminUser() {
         if (!userRepository.existsByEmailAny(adminEmail)) {
             User admin = new User();
@@ -310,6 +410,21 @@ public class UserService {
         }
     }
 
+    /**
+     * Changes a user's password by creating a new version with the updated hash.
+     * Validates the current password before proceeding.
+     * Validates the new password has not been used in any previous version.
+     *
+     * Creates a new effective dated version rather than updating in place —
+     * consistent with the effective dating model and provides a complete
+     * audit trail of password changes.
+     *
+     * @param id the user's generated sequence ID
+     * @param currentPassword the user's current plain text password for verification
+     * @param newPassword the new plain text password to hash and store
+     * @param updatedBy audit field identifying who made the change
+     * @throws RuntimeException if current password incorrect or new password previously used
+     */
     public void changePassword(Long id, String currentPassword,
                                String newPassword, String updatedBy) {
         // Find current active user
@@ -355,7 +470,19 @@ public class UserService {
         userRepository.save(updatedUser);
     }
 
-    // Request password reset - generates reset token
+    /**
+     * Generates a password reset token and stores it on the current user record.
+     * Token is a random UUID with a 1 hour expiry.
+     *
+     * In production this token would be sent to the user's email address
+     * via the notification-service. It is returned directly here for
+     * testing and development purposes only — never expose reset tokens
+     * in a production API response.
+     *
+     * @param email the email address of the user requesting the reset
+     * @return the generated reset token string
+     * @throws RuntimeException if no active account found for the email
+     */
     public String requestPasswordReset(String email) {
         // Find current active user
         User currentUser = userRepository.findCurrentByEmail(email)
@@ -375,7 +502,19 @@ public class UserService {
         return resetToken;
     }
 
-    // Confirm password reset - validates token and updates password
+    /**
+     * Validates a password reset token and updates the user's password.
+     * Checks the token exists, has not expired (1 hour validity) and
+     * that the new password has not been previously used.
+     *
+     * Creates a new effective dated version with the updated password —
+     * reset token fields are cleared on the new version.
+     * The old version is closed with endDate set to the reset timestamp.
+     *
+     * @param resetToken the UUID reset token from the reset request
+     * @param newPassword the new plain text password to hash and store
+     * @throws RuntimeException if token invalid, expired or password previously used
+     */
     public void confirmPasswordReset(String resetToken, String newPassword) {
         // Find user by reset token
         User currentUser = userRepository.findByResetToken(resetToken)
@@ -426,7 +565,19 @@ public class UserService {
         userRepository.save(updatedUser);
     }
 
-    // Check new password has not been used before
+    /**
+     * Validates that a new password has not been used in any previous version
+     * of the user's account. Uses BCrypt matching against all historical
+     * password hashes retrieved from the effective dating audit trail.
+     *
+     * This method deliberately leverages the existing version history rather
+     * than maintaining a separate password history table — the effective
+     * dating model provides this capability as a side effect.
+     *
+     * @param id the user's generated sequence ID
+     * @param newPassword the plain text password to validate
+     * @throws RuntimeException if the password has been previously used
+     */
     private void validatePasswordNotPreviouslyUsed(Long id, String newPassword) {
         List<String> previousPasswords = userRepository.findAllPasswordsById(id);
         boolean previouslyUsed = previousPasswords.stream()
