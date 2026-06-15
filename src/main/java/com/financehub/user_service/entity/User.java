@@ -97,6 +97,10 @@ public class User {
     @Column(nullable = false, length = 30)
     private UserStatus status;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status_reason", length = 50)
+    private UserStatusReason statusReason;
+
     // Effective dating
     @Column(name = "end_date")
     private LocalDateTime endDate;

@@ -7,9 +7,11 @@ import com.financehub.user_service.enums.UserStatus;
 import com.financehub.user_service.enums.Role;
 import com.financehub.user_service.entity.User;
 import com.financehub.user_service.entity.UserId;
+import com.financehub.user_service.enums.UserStatusReason;
 import com.financehub.user_service.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -32,6 +34,7 @@ import java.util.Optional;
  * @see JwtService
  */
 @Service
+@Transactional
 public class UserService {
 
     private final UserRepository userRepository;
@@ -375,12 +378,45 @@ public class UserService {
     }
 
     // Update status
-    public User updateStatus(Long id, UserStatus status, String updatedBy) {
+    // A cleaner long-term pattern is Lombok's @Builder(toBuilder = true) - do that on later refractoring.
+    public User updateStatus(Long id, UserStatus status, UserStatusReason statusReason, String updatedBy) {
+        // Find current active record
         User currentUser = userRepository.findCurrentById(id)
                 .orElseThrow(() -> new RuntimeException("User not found with ID: " + id));
-        currentUser.setStatus(status);
+
+        // Close off current record with exact timestamp
+        LocalDateTime now = LocalDateTime.now();
+        currentUser.setEndDate(now);
         currentUser.setUpdatedBy(updatedBy);
-        return userRepository.save(currentUser);
+        userRepository.save(currentUser);
+
+        // Create new version with nanosecond after to avoid boundary clash
+        UserId newUserId = new UserId();
+        newUserId.setId(id);
+        newUserId.setEffectiveDate(now.plusNanos(1000));
+
+        User newVersion = new User();
+        newVersion.setUserId(newUserId);
+        newVersion.setRole(currentUser.getRole());
+        newVersion.setTitle(currentUser.getTitle());
+        newVersion.setFirstName(currentUser.getFirstName());
+        newVersion.setMiddleName(currentUser.getMiddleName());
+        newVersion.setLastName(currentUser.getLastName());
+        newVersion.setDateOfBirth(currentUser.getDateOfBirth());
+        newVersion.setEmail(currentUser.getEmail());
+        newVersion.setPhoneNumber(currentUser.getPhoneNumber());
+        newVersion.setPassword(currentUser.getPassword());
+        newVersion.setEmailVerified(currentUser.isEmailVerified());
+        newVersion.setResetToken(currentUser.getResetToken());
+        newVersion.setResetTokenExpiry(currentUser.getResetTokenExpiry());
+        newVersion.setCreatedBy(currentUser.getCreatedBy());
+        newVersion.setUpdatedBy(updatedBy);
+
+        // New values for this version
+        newVersion.setStatus(status);
+        newVersion.setStatusReason(statusReason);
+
+        return userRepository.save(newVersion);
     }
 
     /**

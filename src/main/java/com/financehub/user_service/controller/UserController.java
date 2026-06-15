@@ -1,6 +1,7 @@
 package com.financehub.user_service.controller;
 
 import com.financehub.user_service.dto.*;
+import com.financehub.user_service.enums.UserStatusReason;
 import com.financehub.user_service.service.UserService;
 import com.financehub.user_service.enums.UserStatus;
 import com.financehub.user_service.entity.User;
@@ -151,13 +152,14 @@ public class UserController {
         return ResponseEntity.ok(userService.verifyEmail(id, updatedBy));
     }
 
-    // Update status
+    // Updatre user status
     @PatchMapping("/{id}/status")
     public ResponseEntity<User> updateStatus(
             @PathVariable Long id,
             @RequestParam UserStatus status,
+            @RequestParam(required = false) UserStatusReason statusReason,
             @RequestHeader(value = "X-Updated-By", defaultValue = "system") String updatedBy) {
-        return ResponseEntity.ok(userService.updateStatus(id, status, updatedBy));
+        return ResponseEntity.ok(userService.updateStatus(id, status, statusReason, updatedBy));
     }
 
     // Change password

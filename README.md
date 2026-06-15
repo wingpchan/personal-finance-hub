@@ -67,6 +67,9 @@ input, challenge and domain knowledge during the development process:
   for production audit reporting
 - Identified need for composite key (ID + effectiveDate) to support
   versioned records
+- Identified that `updateStatus` mutated the current record in place rather
+    than following the effective dating pattern — refactored to close-and-insert
+    a new version, wrapped in `@Transactional` to guarantee atomicity
 
 **Security**
 - Drove addition of role based access control (ROLE_USER, ROLE_ADMIN)
@@ -87,6 +90,8 @@ input, challenge and domain knowledge during the development process:
   flows for complete audit trail
 - Identified ambiguous search parameter combinations, leading to explicit
   validation and rejection of conflicting parameters
+- Replaced free-text status change reason with a controlled `UserStatusReason`
+    enum, ensuring consistent and reportable audit reasons across status transitions
 
 **Code Quality**
 - Identified double negative in isTokenExpired() — refactored to
@@ -126,6 +131,8 @@ an end date. This provides a complete, immutable history of all changes.
 Every record captures:
 - `createdAt` / `createdBy` — set once on creation, never updated
 - `updatedAt` / `updatedBy` — updated on every change
+- `statusReason` — controlled reason code (`UserStatusReason`) recorded against
+  each status-changing version, supporting audit and regulatory traceability
 
 ### Password Security
 - Passwords are hashed using BCrypt before storage
@@ -215,7 +222,7 @@ Authorization: Bearer <token>
 | `GET` | `/search` | ROLE_ADMIN | Search users by name |
 | `PUT` | `/{id}` | Authenticated | Update user — creates new version |
 | `PATCH` | `/{id}/verify-email` | Authenticated | Mark email as verified |
-| `PATCH` | `/{id}/status` | ROLE_ADMIN | Update user status |
+| `PATCH` | `/{id}/status` | ROLE_ADMIN | Update user status (with optional reason) |
 | `PATCH` | `/{id}/reinstate` | ROLE_ADMIN | Reinstate deleted user |
 | `PATCH` | `/{id}/change-password` | Authenticated | Change password |
 | `DELETE` | `/{id}` | Authenticated | Soft delete user |
@@ -366,7 +373,7 @@ com.financehub.user_service
 ├── controller      — REST API endpoints
 ├── dto             — Data transfer objects (LoginRequest, LoginResponse etc)
 ├── entity          — JPA entities and composite keys
-├── enums           — Title, UserStatus, Role
+├── enums           — Title, UserStatus, Role, UserStatusReason
 ├── exception       — Global exception handler
 ├── repository      — Data access interfaces
 └── service         — Business logic
