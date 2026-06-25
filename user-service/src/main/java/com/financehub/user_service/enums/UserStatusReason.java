@@ -1,7 +1,4 @@
 package com.financehub.user_service.enums;
-
-package com.financehub.user_service.enums;
-
 /**
  * Defined reasons for a change in UserStatus, supporting audit and
  * regulatory traceability. Captured alongside each effective-dated

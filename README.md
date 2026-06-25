@@ -19,6 +19,26 @@ exposing a REST API:
 
 ---
 
+## user-service
+
+> User registration, authentication and profile management
+---
+
+## Repository Structure
+
+```
+personal-finance-hub/
+
+├── user-service/        — User registration, authentication and profile management
+├── account-service/     — Bank accounts and balances (in progress)
+├── transaction-service/ — Income and expense tracking (planned)
+├── notification-service/— Budget alerts and notifications (planned)
+└── api-gateway/         — Single entry point routing (planned)
+```
+Each service is independently deployable, owns its own database, and
+exposes a REST API. Services share no code or data — communication
+is via REST APIs using JWT for identity propagation.
+
 ## Technology Stack
 
 | Technology | Purpose |
@@ -395,3 +415,9 @@ com.financehub.user_service
 
 Built as a portfolio project to demonstrate microservices architecture,
 Spring Boot development, enterprise design patterns and security best practices.
+
+Each service in this repository deliberately uses a different development
+methodology — AI assisted iterative development (user-service), TDD
+(account-service), Spec Driven Development (transaction-service) and
+event driven architecture (notification-service) — to demonstrate
+breadth of approach across the full project.

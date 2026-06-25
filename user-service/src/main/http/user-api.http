@@ -17,6 +17,15 @@ Content-Type: application/json
 
 {
   "email": "john.smith@example.com",
+  "password": "Password1#"
+}
+
+### Login as regular user
+POST http://localhost:8081/api/users/login
+Content-Type: application/json
+
+{
+  "email": "johnny.smith@example.com",
   "password": "Password1!"
 }
 
@@ -49,11 +58,11 @@ X-Created-By: testuser
 
 {
   "title": "MR",
-  "firstName": "John",
+  "firstName": "Johnny",
   "middleName": "William",
   "lastName": "Smith",
   "dateOfBirth": "1985-06-15",
-  "email": "john.smith@example.com",
+  "email": "johnny.smith@example.com",
   "phoneNumber": "+441234567890",
   "password": "Password1!"
 }
@@ -225,10 +234,12 @@ Authorization: Bearer <paste_token_here>
 }
 
 ### Verify email (replace 1 with actual ID)
-PATCH http://localhost:8081/api/users/1/verify-email
+PATCH http://localhost:8081/api/users/16/verify-email
 Content-Type: application/json
 X-Updated-By: testuser
-Authorization: Bearer <paste_token_here>
+Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJhZG1pbkBmaW5hbmNlaHViLmNvbSIsInVzZXJJZCI6MTUsInJvbGUiOiJST0xFX0FETUlOIiwiaWF0IjoxNzgyMzk4NjE3LCJleHAiOjE3ODI0ODUwMTd9.Jre-Rw29_iiP65jHe7di3I2LEwogB8Yi7zvCC2T-tYsTmfBPavIMuyM8wfXgECTYwkOu-cMTxYZJk858U7Se1w
+
+
 
 ### Update status (admin only - replace 1 with actual ID)
 PATCH http://localhost:8081/api/users/1/status?status=ACTIVE
